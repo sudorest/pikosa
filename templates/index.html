@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Remover</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="font-sans">
+
+    <header class="flex justify-between items-center p-6">
+        <a class="text-lg font-semibold"><span onclick="window.location.href='/'" style="cursor: pointer;" class="text-purple-600">pikosa.org</span></a>
+    </header>
+
+    <section class="text-center p-10">
+        <h1 class="text-3xl font-bold">
+            Create easy product photos with <span class="text-purple-600 underline">white background</span>
+        </h1>
+        <p class="text-gray-600 mt-3 max-w-2xl mx-auto">
+            Upload images about your clothing/products, then we will make them transparent and apply a white background!
+        </p>
+
+        <div class="flex justify-center mt-8">
+            <div class="border-dashed border-2 border-gray-400 p-10 rounded-lg text-center w-96">
+                <i class="fas fa-camera text-3xl text-gray-500"></i>
+                <p class="font-semibold mt-4">Select Your Images Here</p>
+
+                <input type="file" id="imageUpload" multiple accept="image/*" class="hidden">
+
+                <button id="uploadBtn" class="bg-purple-600 text-white px-4 py-2 mt-4 rounded">Select Images</button>
+                
+                <p class="text-gray-500 text-sm mt-2">JPG or PNG | Up to {{ maxfiles }} images</p>
+
+                <div id="previewContainer" class="flex flex-wrap justify-center mt-4 space-x-2"></div>
+
+                <button id="submitImages" class="bg-blue-600 text-white px-4 py-2 mt-4 rounded hidden">Start</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="gallerySection" class="hidden bg-gray-100 p-10" style="min-height: 70vh;">
+        <h2 class="text-2xl font-bold text-center mb-6">Processed Images</h2>
+        <h4 class="text-4 font-bold text-center mb-6">Your images will be done in <span id="counter"></span> seconds...</h4>
+        <div id="galleryContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <section class="text-center p-10">
+        <h2 class="text-2xl font-bold">Demo</h2>
+        <div class="mt-6 flex justify-center">
+            <video id="lazy-video" width="1280" height="520" class="rounded-lg shadow-lg" controls>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </section>
+
+    <footer class="bg-purple-200 text-black p-10 text-center">
+        <h2 class="text-xl font-bold">Check out open-source repo on <a href="https://github.com/sudorest/pikosa" style="color: darkblue">GitHub!</a></h2>
+
+        <div class="mt-6">
+            <p class="text-gray-700">2025 - pikosa.org</p>
+        </div>
+    </footer>
+
+    <script>
+        $(document).ready(function () {
+            let selectedFiles = [];
+
+            $("#uploadBtn").click(function () {
+                $("#imageUpload").click();
+            });
+
+            $("#imageUpload").change(function (event) {
+                selectedFiles = Array.from(event.target.files).slice(0, {{maxfiles}}); // Limit to {{maxfiles}} images
+                $("#previewContainer").html(""); // Clear previous previews
+
+                selectedFiles.forEach((file, index) => {
+                    let reader = new FileReader();
+                    reader.onload = function (e) {
+                        $("#previewContainer").append(`<img src="${e.target.result}" class="w-16 h-16 rounded-lg shadow-md">`);
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                if (selectedFiles.length > 0) {
+                    $("#submitImages").removeClass("hidden");
+                } else {
+                    $("#submitImages").addClass("hidden");
+                }
+
+                $("#counter").html(selectedFiles.length * 3)
+            });
+
+            $("#submitImages").click(function () {
+                let formData = new FormData();
+                selectedFiles.forEach(file => formData.append("images[]", file));
+                $("#galleryContainer").html(""); // Clear previous gallery images
+                $("#gallerySection").removeClass("hidden");
+
+                $("html, body").animate({
+                    scrollTop: $("#gallerySection").offset().top
+                }, 800);
+
+                $.ajax({
+                    url: "/", // Replace with your endpoint
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        for (let item of response) {
+                            $("#galleryContainer").append(`
+                            <div class="bg-white p-4 rounded-lg shadow-md">
+                                <img src="${item}" class="w-full h-auto rounded-lg">
+                                <a href="${item}" download class="mt-2 inline-block bg-blue-500 text-white py-2 px-4 rounded">Download</a>
+                            </div>
+                        `);
+                        
+                        }
+                    },
+                    error: function (error) {
+                        $("#gallerySection").addClass("hidden");
+                        alert("Error uploading images.");
+                        console.log(error);
+                    }
+                });
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("lazy-video").load();
+        });
+
+    </script>
+
+</body>
+</html>
